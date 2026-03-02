@@ -144,7 +144,7 @@ public class SourceGeneratorWithAdditionalFilesTests
                 useLowerCaseMetadataKeys: true));
 
         var compilation = CSharpCompilation.Create(nameof(GeneratesPathsWhenMetadataKeysAreLowerCase));
-        var runResult = driver.RunGenerators(compilation).GetRunResult();
+        var runResult = driver.RunGenerators(compilation, TestContext.Current.CancellationToken).GetRunResult();
         var generatedPaths = runResult.GeneratedTrees
             .Select(tree => Path.GetFileName(tree.FilePath))
             .ToArray();
@@ -167,7 +167,7 @@ public class SourceGeneratorWithAdditionalFilesTests
             .WithUpdatedAnalyzerConfigOptions(new TestAnalyzerConfigOptionsProvider([]));
 
         var compilation = CSharpCompilation.Create(nameof(InfersRootFoldersWhenMetadataMissing));
-        var runResult = driver.RunGenerators(compilation).GetRunResult();
+        var runResult = driver.RunGenerators(compilation, TestContext.Current.CancellationToken).GetRunResult();
         var generatedFiles = runResult.GeneratedTrees
             .ToDictionary(
                 static t => Path.GetFileName(t.FilePath),
