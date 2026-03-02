@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypedPaths.Generator", "TypedPaths.Generator\TypedPaths.Generator.csproj", "{F910A5E4-A049-407E-8F48-C091A281663A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypedPaths.Generator.Sample", "TypedPaths.Generator.Sample\TypedPaths.Generator.Sample.csproj", "{BA494277-A173-418A-8DAD-BB59B9DDFBAD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypedPaths.Generator.Tests", "TypedPaths.Generator.Tests\TypedPaths.Generator.Tests.csproj", "{F8A36E34-9236-4B94-90EC-C6EA410A1B8C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F910A5E4-A049-407E-8F48-C091A281663A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F910A5E4-A049-407E-8F48-C091A281663A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F910A5E4-A049-407E-8F48-C091A281663A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F910A5E4-A049-407E-8F48-C091A281663A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA494277-A173-418A-8DAD-BB59B9DDFBAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA494277-A173-418A-8DAD-BB59B9DDFBAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA494277-A173-418A-8DAD-BB59B9DDFBAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA494277-A173-418A-8DAD-BB59B9DDFBAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8A36E34-9236-4B94-90EC-C6EA410A1B8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8A36E34-9236-4B94-90EC-C6EA410A1B8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8A36E34-9236-4B94-90EC-C6EA410A1B8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8A36E34-9236-4B94-90EC-C6EA410A1B8C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

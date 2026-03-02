@@ -1,0 +1,3 @@
+# Normalize line endings to CRLF on checkout (matches .editorconfig end_of_line = crlf).
+# Ensures dotnet format passes in CI (Linux) and locally (Windows).
+* text=auto eol=crlf
