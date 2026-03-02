@@ -53,20 +53,20 @@ public class SourceGeneratorWithAttributesTests
 
         // We need to create a compilation with the required source code.
         var compilation = CSharpCompilation.Create(nameof(SourceGeneratorWithAdditionalFilesTests),
-            [CSharpSyntaxTree.ParseText(VectorClassText)],
+            [CSharpSyntaxTree.ParseText(VectorClassText, cancellationToken: TestContext.Current.CancellationToken)],
             [
                 // To support 'System.Attribute' inheritance, add reference to 'System.Private.CoreLib'.
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
             ]);
 
         // Run generators and retrieve all results.
-        var runResult = driver.RunGenerators(compilation).GetRunResult();
+        var runResult = driver.RunGenerators(compilation, cancellationToken: TestContext.Current.CancellationToken).GetRunResult();
 
         // All generated files can be found in 'RunResults.GeneratedTrees'.
         var generatedFileSyntax = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Vector3.g.cs"));
 
         // Complex generators should be tested using text comparison.
-        Assert.Equal(ExpectedGeneratedClassText, generatedFileSyntax.GetText().ToString(),
+        Assert.Equal(ExpectedGeneratedClassText, generatedFileSyntax.GetText(cancellationToken: TestContext.Current.CancellationToken).ToString(),
             ignoreLineEndingDifferences: true);
     }
 }
