@@ -90,6 +90,37 @@ public class SourceGeneratorWithAdditionalFilesTests
         Assert.DoesNotContain("public static class Src", generatedText);
     }
 
+    [Fact]
+    public void IncludesOnlyConfiguredBasePathWhenMultipleSourceRootsPresent()
+    {
+        var additionalFiles = new AdditionalText[]
+        {
+            new TestAdditionalFile("./src/Page.cshtml", "template"),
+            new TestAdditionalFile("./src/Views/Home.cshtml", "template"),
+            new TestAdditionalFile("./template/email/welcome.txt", "template"),
+            new TestAdditionalFile("./template/sms/otp.txt", "template")
+        };
+
+        var withSrcBase = RunAndGetTypedPathsCode(additionalFiles, basePath: "/src");
+        Assert.Contains("public static class Src", withSrcBase);
+        Assert.Contains("public const string Page = \"src/Page.cshtml\";", withSrcBase);
+        Assert.Contains("public static class Views", withSrcBase);
+        Assert.Contains("public const string Home = \"src/Views/Home.cshtml\";", withSrcBase);
+        Assert.DoesNotContain("public static class Template", withSrcBase);
+        Assert.DoesNotContain("Welcome", withSrcBase);
+        Assert.DoesNotContain("Otp", withSrcBase);
+
+        var withTemplateBase = RunAndGetTypedPathsCode(additionalFiles, basePath: "/template");
+        Assert.Contains("public static class Template", withTemplateBase);
+        Assert.Contains("public static class Email", withTemplateBase);
+        Assert.Contains("public const string Welcome = \"template/email/welcome.txt\";", withTemplateBase);
+        Assert.Contains("public static class Sms", withTemplateBase);
+        Assert.Contains("public const string Otp = \"template/sms/otp.txt\";", withTemplateBase);
+        Assert.DoesNotContain("public static class Src", withTemplateBase);
+        Assert.DoesNotContain("Page", withTemplateBase);
+        Assert.DoesNotContain("Home", withTemplateBase);
+    }
+
     private static string RunAndGetTypedPathsCode(IEnumerable<AdditionalText> additionalFiles, string basePath = "/src")
     {
         var generator = new SourceGeneratorWithAdditionalFiles();
