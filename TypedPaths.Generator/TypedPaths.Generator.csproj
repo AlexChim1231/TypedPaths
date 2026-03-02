@@ -33,6 +33,7 @@
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>
         </None>
+        <None Include="buildTransitive\TypedPaths.Generator.targets" Pack="true" PackagePath="buildTransitive\" />
     </ItemGroup>
 
     <ItemGroup>

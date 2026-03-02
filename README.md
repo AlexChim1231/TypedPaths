@@ -1,6 +1,6 @@
 # TypedPaths.Generator
 
-A Roslyn source generator that turns a folder tree into **strongly typed path constants** at compile time. Point it at a base path (e.g. `/src` or `/templates`), and get nested static classes and `const string` members you can use instead of magic strings.
+A Roslyn source generator that turns configured folder trees into **strongly typed path constants** at compile time. Each configured folder becomes a nested static class (for example `Src`, `Template`) so you can avoid magic strings.
 
 ## What you get
 
@@ -14,14 +14,20 @@ Given a structure like:
   folderB/
     Template3.anyext
     Template4.anyext
+/template
+  email/
+    welcome.txt
+  sms/
+    otp.txt
 ```
 
-the generator emits a single file `TypedPaths.g.cs` with:
+the generator emits one file per root folder (`TypedPaths.Src.g.cs`, `TypedPaths.Template.g.cs`, ...), each contributing to the same partial root class:
 
 ```csharp
+// TypedPaths.Src.g.cs
 namespace TypedPaths;
 
-public static class TypedPaths
+public static partial class TypedPaths
 {
     public static class Src
     {
@@ -39,7 +45,27 @@ public static class TypedPaths
 }
 ```
 
-So you can use `TypedPaths.Src.FolderA.Template2` instead of `"src/folderA/Template2.anyext"` and keep paths refactor-safe and discoverable.
+```csharp
+// TypedPaths.Template.g.cs
+namespace TypedPaths;
+
+public static partial class TypedPaths
+{
+    public static class Template
+    {
+        public static class Email
+        {
+            public const string Welcome = "template/email/welcome.txt";
+        }
+        public static class Sms
+        {
+            public const string Otp = "template/sms/otp.txt";
+        }
+    }
+}
+```
+
+So you can use `TypedPaths.Src.FolderA.Template2` and `TypedPaths.Template.Email.Welcome` instead of raw string paths.
 
 ## Requirements
 
@@ -48,39 +74,42 @@ So you can use `TypedPaths.Src.FolderA.Template2` instead of `"src/folderA/Templ
 
 ## Setup
 
-1. **Reference the generator** (as an analyzer, not a normal assembly):
+### Option A: consume from NuGet (recommended)
 
-   ```xml
-   <ItemGroup>
-     <ProjectReference Include="path\to\TypedPaths.Generator\TypedPaths.Generator.csproj"
-                       OutputItemType="Analyzer"
-                       ReferenceOutputAssembly="false" />
-   </ItemGroup>
-   ```
+```xml
+<ItemGroup>
+  <PackageReference Include="TypedPaths.Generator" Version="1.0.0" />
+</ItemGroup>
 
-2. **Set the base path** (any relative path you want to expose as typed paths):
+<ItemGroup>
+  <TypedPathsFolder Include="/src" ClassName="Src" />
+  <TypedPathsFolder Include="/template" />
+</ItemGroup>
+```
 
-   ```xml
-   <PropertyGroup>
-     <TypedPathsBasePath>/src</TypedPathsBasePath>
-   </PropertyGroup>
+`TypedPaths.Generator.targets` (from the package `buildTransitive` assets) maps these folders to `AdditionalFiles` and `Content` items for generation.
 
-   <ItemGroup>
-     <CompilerVisibleProperty Include="TypedPathsBasePath" />
-   </ItemGroup>
-   ```
+### Option B: local project reference (repository development)
 
-   Examples: `/src`, `src`, `/templates`, `/assets/email`.
+```xml
+<ItemGroup>
+  <ProjectReference Include="..\TypedPaths.Generator\TypedPaths.Generator.csproj"
+                    OutputItemType="Analyzer"
+                    ReferenceOutputAssembly="false" />
+</ItemGroup>
 
-3. **Include the files** under that path as `AdditionalFiles` so the generator can see them:
+<ItemGroup>
+  <TypedPathsFolder Include="/src" ClassName="Src" />
+  <TypedPathsFolder Include="/template" />
+</ItemGroup>
 
-   ```xml
-   <ItemGroup>
-     <AdditionalFiles Include="src\**\*" />
-   </ItemGroup>
-   ```
+<Import Project="..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets"
+        Condition="Exists('..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets')" />
+```
 
-Build the project; the generator runs and adds `TypedPaths.g.cs` to the compilation.
+The explicit `<Import />` is important for local project reference scenarios so folder declarations are translated into `AdditionalFiles` consistently during local builds.
+
+Build the project; the generator runs and adds `TypedPaths.*.g.cs` files to the compilation.
 
 ## Usage in code
 
@@ -91,6 +120,7 @@ using TypedPathsRoot = TypedPaths.TypedPaths;
 
 // Use as const strings
 string path = TypedPathsRoot.Src.FolderA.Template2;  // "src/folderA/Template2.anyext"
+string emailTemplate = TypedPathsRoot.Template.Email.Welcome; // "template/email/welcome.txt"
 
 // e.g. resolve to full path
 var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2);
@@ -105,11 +135,13 @@ var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2);
 
 ## Repository layout
 
-| Project | Description |
-|--------|-------------|
-| `TypedPaths.Generator` | The source generator (Roslyn incremental generator). |
+
+| Project                       | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| `TypedPaths.Generator`        | The source generator (Roslyn incremental generator).       |
 | `TypedPaths.Generator.Sample` | Example app that uses the generator and runs a small demo. |
-| `TypedPaths.Generator.Tests` | Unit tests for the generator. |
+| `TypedPaths.Generator.Tests`  | Unit tests for the generator.                              |
+
 
 ## Build and test
 
@@ -127,4 +159,4 @@ dotnet run --project TypedPaths.Generator.Sample
 
 ## License
 
-See the repository for license information.
+See the repository for [license](LICENSE) information.
