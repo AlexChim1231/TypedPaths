@@ -24,6 +24,7 @@ Given a structure like:
 the generator emits one file per root folder (`TypedPaths.Src.g.cs`, `TypedPaths.Template.g.cs`, ...), each contributing to the same partial root class:
 
 ```csharp
+// TypedPaths.Src.g.cs
 namespace TypedPaths;
 
 public static partial class TypedPaths
@@ -41,7 +42,15 @@ public static partial class TypedPaths
             public const string Template4 = "src/folderB/Template4.anyext";
         }
     }
+}
+```
 
+```csharp
+// TypedPaths.Template.g.cs
+namespace TypedPaths;
+
+public static partial class TypedPaths
+{
     public static class Template
     {
         public static class Email
