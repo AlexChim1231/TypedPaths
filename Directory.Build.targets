@@ -1,0 +1,7 @@
+<Project>
+    <!-- One-time husky setup per repo: tools + git hooks. No manual steps for developers. -->
+    <Target Name="SetupHusky" AfterTargets="Restore" Condition="'$(GITHUB_ACTIONS)' != 'true'">
+        <Exec Command="dotnet tool restore" ContinueOnError="true" />
+        <Exec Command="dotnet husky install" ContinueOnError="true" />
+    </Target>
+</Project>
