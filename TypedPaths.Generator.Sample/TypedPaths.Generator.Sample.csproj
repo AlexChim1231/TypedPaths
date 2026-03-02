@@ -5,7 +5,6 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <RootNamespace>TypedPaths.Generator.Sample</RootNamespace>
-        <TypedPathsBasePath>/src</TypedPathsBasePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,11 +12,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <CompilerVisibleProperty Include="TypedPathsBasePath"/>
+        <TypedPathsFolder Include="/src" ClassName="Src" />
+        <TypedPathsFolder Include="/template" />
     </ItemGroup>
 
-    <ItemGroup>
-        <AdditionalFiles Include="src\**\*"/>
-    </ItemGroup>
+    <Import Project="..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets"
+            Condition="Exists('..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets')" />
 
 </Project>
