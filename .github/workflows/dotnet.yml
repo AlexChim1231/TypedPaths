@@ -1,0 +1,39 @@
+# This workflow will format-check and build the WatiSdk library only.
+# Tests (WatiSdk.Test) are run locally only.
+
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '.github/workflows/dotnet.yml'
+  pull_request:
+    branches: [ "master" ]
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '.github/workflows/dotnet.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore TypedPaths/TypedPaths.Generator.csproj
+
+    - name: Format (verify)
+      run: dotnet format --verify-no-changes
+
+    - name: Build
+      run: dotnet build TypedPaths/TypedPaths.Generator.csproj --no-restore
