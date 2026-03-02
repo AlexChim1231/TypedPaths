@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
@@ -14,71 +10,158 @@ namespace TypedPaths.Generator;
 [Generator]
 public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
 {
-    private const string BasePathPropertyKey = "build_property.TypedPathsBasePath";
+    private const string ProjectDirPropertyKey = "build_property.ProjectDir";
+    private const string MsBuildProjectDirectoryPropertyKey = "build_property.MSBuildProjectDirectory";
+    private const string FolderIncludeMetadataKey = "build_metadata.AdditionalFiles.TypedPathsFolderInclude";
+    private const string FolderClassNameMetadataKey = "build_metadata.AdditionalFiles.TypedPathsClassName";
+    private const string FolderIncludeMetadataKeyLower = "build_metadata.additionalfiles.TypedPathsFolderInclude";
+    private const string FolderClassNameMetadataKeyLower = "build_metadata.additionalfiles.TypedPathsClassName";
+    private const string FolderIncludeMetadataKeyAllLower = "build_metadata.additionalfiles.typedpathsfolderinclude";
+    private const string FolderClassNameMetadataKeyAllLower = "build_metadata.additionalfiles.typedpathsclassname";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var additionalPathsProvider = context.AdditionalTextsProvider
-            .Select((file, _) => file.Path)
+        var additionalFilesProvider = context.AdditionalTextsProvider
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Select((pair, _) =>
+            {
+                var additionalFile = pair.Left;
+                var options = pair.Right.GetOptions(additionalFile);
+                var includePath = TryGetMetadata(options, FolderIncludeMetadataKey, FolderIncludeMetadataKeyLower, FolderIncludeMetadataKeyAllLower);
+                var className = TryGetMetadata(options, FolderClassNameMetadataKey, FolderClassNameMetadataKeyLower, FolderClassNameMetadataKeyAllLower);
+                return new AdditionalFileInput(additionalFile.Path, includePath, className);
+            })
             .Collect();
-        var configuredBasePathProvider = context.AnalyzerConfigOptionsProvider
-            .Select((options, _) => NormalizeConfiguredBasePath(options.GlobalOptions));
+        var generationOptionsProvider = context.AnalyzerConfigOptionsProvider
+            .Select((options, _) => CreateGenerationOptions(options.GlobalOptions));
 
         context.RegisterSourceOutput(
-            additionalPathsProvider.Combine(configuredBasePathProvider),
+            additionalFilesProvider.Combine(generationOptionsProvider),
             (ctx, input) => GenerateCode(ctx, input.Left, input.Right));
     }
 
-    private static void GenerateCode(SourceProductionContext context, ImmutableArray<string> filePaths, string configuredBasePath)
+    private static void GenerateCode(SourceProductionContext context, ImmutableArray<AdditionalFileInput> fileInputs, GenerationOptions options)
     {
-        if (filePaths.IsDefaultOrEmpty)
+        if (fileInputs.IsDefaultOrEmpty)
         {
             return;
         }
 
-        var basePathSegments = GetPathSegments(configuredBasePath);
-        var relativePaths = filePaths
-            .Select(path => TryGetRelativePath(path, basePathSegments))
-            .Where(path => path is not null)
-            .Select(path => path!)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        if (relativePaths.Length == 0)
+        var folderStates = new Dictionary<string, FolderState>(StringComparer.OrdinalIgnoreCase);
+        foreach (var fileInput in fileInputs)
+        {
+            var relativePath = TryGetRelativePath(fileInput.Path, options.ProjectDirectory);
+            if (relativePath is null)
+            {
+                continue;
+            }
+
+            var includePath = fileInput.FolderInclude;
+            var className = fileInput.FolderClassName;
+            if (string.IsNullOrWhiteSpace(includePath))
+            {
+                var inferred = TryInferFolderConfiguration(relativePath);
+                if (inferred is not null)
+                {
+                    includePath = inferred.Value.IncludePath;
+                    className = inferred.Value.ClassName;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(includePath))
+            {
+                continue;
+            }
+
+            var includeSegments = GetPathSegments(includePath);
+            if (includeSegments.Count == 0)
+            {
+                continue;
+            }
+
+            var relativeSegments = GetPathSegments(relativePath);
+            if (!IsPrefix(relativeSegments, includeSegments) || relativeSegments.Count <= includeSegments.Count)
+            {
+                continue;
+            }
+
+            var rootName = string.IsNullOrWhiteSpace(className)
+                ? includeSegments[^1]
+                : className!;
+            var folderKey = $"{string.Join("/", includeSegments)}|{rootName}";
+            if (!folderStates.TryGetValue(folderKey, out var folderState))
+            {
+                folderState = new FolderState(new TypedPathsFolder(includeSegments, rootName));
+                folderStates.Add(folderKey, folderState);
+            }
+
+            AddFilePath(folderState.Root, relativeSegments, includeSegments.Count, relativePath);
+        }
+
+        if (folderStates.Count == 0 || folderStates.Values.All(state => !state.Root.HasContent))
         {
             return;
         }
 
-        var root = new DirectoryNode(string.Empty);
-        foreach (var relativePath in relativePaths)
+        var usedRootMembers = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var state in folderStates.Values.Where(static state => state.Root.HasContent))
         {
-            AddFilePath(root, relativePath);
+            var root = state.Root;
+            root.GeneratedName = ToUniqueIdentifier(ToPascalIdentifier(root.Name), usedRootMembers);
+            var source = BuildSource(root);
+            context.AddSource($"TypedPaths.{root.GeneratedName}.g.cs", SourceText.From(source, Encoding.UTF8));
         }
-
-        var source = BuildSource(root);
-        context.AddSource("TypedPaths.g.cs", SourceText.From(source, Encoding.UTF8));
     }
 
-    private static string NormalizeConfiguredBasePath(AnalyzerConfigOptions globalOptions)
+    private static GenerationOptions CreateGenerationOptions(AnalyzerConfigOptions globalOptions)
     {
-        if (!globalOptions.TryGetValue(BasePathPropertyKey, out var configured))
+        var projectDirectory = TryGetProjectDirectory(globalOptions);
+        return new GenerationOptions(projectDirectory);
+    }
+
+    private static string? TryGetMetadata(AnalyzerConfigOptions options, params string[] keys)
+    {
+        foreach (var key in keys)
         {
-            return "src";
+            if (options.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            var lowerInvariantKey = key.ToLowerInvariant();
+            if (!string.Equals(lowerInvariantKey, key, StringComparison.Ordinal)
+                && options.TryGetValue(lowerInvariantKey, out value)
+                && !string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
         }
 
-        var segments = GetPathSegments(configured);
-        if (segments.Count == 0)
+        return null;
+    }
+
+    private static string? TryGetProjectDirectory(AnalyzerConfigOptions globalOptions)
+    {
+        if (globalOptions.TryGetValue(ProjectDirPropertyKey, out var projectDirectory)
+            && !string.IsNullOrWhiteSpace(projectDirectory))
         {
-            return "src";
+            return projectDirectory;
         }
 
-        return string.Join(Path.AltDirectorySeparatorChar.ToString(), segments);
+        if (globalOptions.TryGetValue(MsBuildProjectDirectoryPropertyKey, out projectDirectory)
+            && !string.IsNullOrWhiteSpace(projectDirectory))
+        {
+            return projectDirectory;
+        }
+
+        return null;
     }
 
     /// <summary>
     /// Returns path segments (directory and file names) from root to leaf using System.IO.Path.
     /// Input is normalized so both forward and back slashes are handled.
     /// </summary>
-    private static IReadOnlyList<string> GetPathSegments(string path)
+    private static List<string> GetPathSegments(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -124,59 +207,76 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
         return segments;
     }
 
-    private static string? TryGetRelativePath(string path, IReadOnlyList<string> basePathSegments)
+    private static string? TryGetRelativePath(string path, string? projectDirectory)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
             return null;
         }
 
-        var segments = GetPathSegments(path);
-        if (segments.Count == 0)
+        if (!string.IsNullOrWhiteSpace(projectDirectory) && Path.IsPathRooted(path))
         {
-            return null;
-        }
-
-        var basePathStartIndex = FindSubsequenceStart(segments, basePathSegments);
-        if (basePathStartIndex < 0 || basePathStartIndex + basePathSegments.Count >= segments.Count)
-        {
-            return null;
-        }
-
-        var relativeSegments = segments.Skip(basePathStartIndex).ToArray();
-        return string.Join(Path.AltDirectorySeparatorChar.ToString(), relativeSegments);
-    }
-
-    private static int FindSubsequenceStart(IReadOnlyList<string> source, IReadOnlyList<string> pattern)
-    {
-        if (source.Count == 0 || pattern.Count == 0 || pattern.Count > source.Count)
-        {
-            return -1;
-        }
-
-        for (var start = 0; start <= source.Count - pattern.Count; start++)
-        {
-            var allSegmentsMatch = !pattern.Where((t, offset) => !string.Equals(source[start + offset], t, StringComparison.OrdinalIgnoreCase)).Any();
-
-            if (allSegmentsMatch)
+            var fullPath = Path.GetFullPath(path);
+            var projectDir = Path.GetFullPath(projectDirectory);
+            var relative = Path.GetRelativePath(projectDir, fullPath)
+                .Replace('\\', Path.AltDirectorySeparatorChar)
+                .Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Trim()
+                .Trim(Path.AltDirectorySeparatorChar);
+            if (!string.IsNullOrWhiteSpace(relative) && !relative.StartsWith("..", StringComparison.Ordinal))
             {
-                return start;
+                return relative;
             }
         }
 
-        return -1;
-    }
-
-    private static void AddFilePath(DirectoryNode root, string relativePath)
-    {
-        var segments = GetPathSegments(relativePath);
-        if (segments.Count == 0)
+        if (Path.IsPathRooted(path))
         {
-            return;
+            return null;
         }
 
+        var normalized = path.Replace('\\', Path.AltDirectorySeparatorChar)
+            .Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            .Trim()
+            .TrimStart('.')
+            .Trim(Path.AltDirectorySeparatorChar);
+
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+    }
+
+    private static (string IncludePath, string ClassName)? TryInferFolderConfiguration(string relativePath)
+    {
+        var segments = GetPathSegments(relativePath);
+        if (segments.Count < 2)
+        {
+            return null;
+        }
+
+        var topLevelFolder = segments[0];
+        return ($"/{topLevelFolder}", topLevelFolder);
+    }
+
+    private static bool IsPrefix(IReadOnlyList<string> source, IReadOnlyList<string> prefix)
+    {
+        if (prefix.Count == 0 || source.Count < prefix.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < prefix.Count; index++)
+        {
+            if (!string.Equals(source[index], prefix[index], StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void AddFilePath(DirectoryNode root, IReadOnlyList<string> segments, int includeSegmentsCount, string relativePath)
+    {
         var current = root;
-        for (var i = 0; i < segments.Count - 1; i++)
+        for (var i = includeSegmentsCount; i < segments.Count - 1; i++)
         {
             var segment = segments[i];
             if (!current.Directories.TryGetValue(segment, out var next))
@@ -188,41 +288,35 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
             current = next;
         }
 
-        var fileName = segments[segments.Count - 1];
+        var fileName = segments[^1];
         current.Files.Add(new FileNode(fileName, relativePath));
     }
 
-    private static string BuildSource(DirectoryNode srcRoot)
+    private static string BuildSource(DirectoryNode root)
     {
         var builder = new StringBuilder();
         builder.AppendLine("// <auto-generated/>");
         builder.AppendLine();
         builder.AppendLine("namespace TypedPaths;");
         builder.AppendLine();
-        builder.AppendLine("public static class TypedPaths");
+        builder.AppendLine("public static partial class TypedPaths");
         builder.AppendLine("{");
-
-        var usedMembers = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var childDirectory in srcRoot.Directories.Values.OrderBy(node => node.Name, StringComparer.OrdinalIgnoreCase))
-        {
-            AppendDirectoryWithName(builder, childDirectory, 1, usedMembers);
-        }
-
-        var childIndent = new string(' ', 4);
-        foreach (var file in srcRoot.Files.OrderBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase))
-        {
-            var baseName = ToPascalIdentifier(Path.GetFileNameWithoutExtension(file.Name));
-            var memberName = ToUniqueIdentifier(baseName, usedMembers);
-            builder.AppendLine($"{childIndent}public const string {memberName} = \"{EscapeString(file.RelativePath)}\";");
-        }
+        AppendDirectoryWithName(builder, root, 1, new HashSet<string>(StringComparer.Ordinal), preserveName: true);
 
         builder.AppendLine("}");
         return builder.ToString();
     }
 
-    private static void AppendDirectoryWithName(StringBuilder builder, DirectoryNode directory, int indentLevel, HashSet<string> usedMembers)
+    private static void AppendDirectoryWithName(
+        StringBuilder builder,
+        DirectoryNode directory,
+        int indentLevel,
+        HashSet<string> usedMembers,
+        bool preserveName = false)
     {
-        directory.GeneratedName = ToUniqueIdentifier(ToPascalIdentifier(directory.Name), usedMembers);
+        directory.GeneratedName = preserveName
+            ? ToPascalIdentifier(directory.GeneratedName)
+            : ToUniqueIdentifier(ToPascalIdentifier(directory.Name), usedMembers);
 
         var indent = new string(' ', indentLevel * 4);
         builder.AppendLine($"{indent}public static class {directory.GeneratedName}");
@@ -324,6 +418,8 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
         public Dictionary<string, DirectoryNode> Directories { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public List<FileNode> Files { get; } = [];
+
+        public bool HasContent => Directories.Count > 0 || Files.Count > 0;
     }
 
     private sealed class FileNode(string name, string relativePath)
@@ -332,4 +428,17 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
 
         public string RelativePath { get; } = relativePath;
     }
+
+    private sealed record TypedPathsFolder(IReadOnlyList<string> IncludeSegments, string ClassName);
+
+    private sealed class FolderState(TypedPathsFolder configuration)
+    {
+        public TypedPathsFolder Configuration { get; } = configuration;
+
+        public DirectoryNode Root { get; } = new(configuration.ClassName);
+    }
+
+    private readonly record struct AdditionalFileInput(string Path, string? FolderInclude, string? FolderClassName);
+
+    private readonly record struct GenerationOptions(string? ProjectDirectory);
 }
