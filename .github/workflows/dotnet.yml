@@ -1,5 +1,5 @@
-# This workflow will format-check and build the WatiSdk library only.
-# Tests (WatiSdk.Test) are run locally only.
+# This workflow will format-check and build the TypedPaths.Generator library only.
+# Tests (TypedPaths.Generator.Tests) are run locally only.
 
 name: .NET
 
@@ -30,10 +30,13 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore TypedPaths/TypedPaths.Generator.csproj
+      run: dotnet restore TypedPaths.Generator/TypedPaths.Generator.csproj
 
     - name: Format (verify)
       run: dotnet format --verify-no-changes
 
     - name: Build
-      run: dotnet build TypedPaths/TypedPaths.Generator.csproj --no-restore
+      run: dotnet build TypedPaths.Generator/TypedPaths.Generator.csproj --no-restore
+
+    - name: Test
+      run: dotnet test TypedPaths.Generator.Tests/TypedPaths.Generator.Tests.csproj --verbosity normal
