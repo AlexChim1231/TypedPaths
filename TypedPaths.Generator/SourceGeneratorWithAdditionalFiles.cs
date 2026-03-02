@@ -82,12 +82,15 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            return Array.Empty<string>();
+            return [];
         }
 
-        var normalized = path.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+        // Normalize both \ and / to forward slash so paths like .\src\folder work on Linux
+        var normalized = path.Replace('\\', Path.AltDirectorySeparatorChar)
+            .Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
             .Trim()
             .Trim(Path.AltDirectorySeparatorChar, '.');
+
         if (normalized.Length > 0 && normalized[0] == Path.AltDirectorySeparatorChar)
         {
             normalized = normalized.TrimStart(Path.AltDirectorySeparatorChar);
@@ -95,7 +98,7 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
 
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            return Array.Empty<string>();
+            return [];
         }
 
         var segments = new List<string>();
@@ -244,7 +247,7 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
     }
 
 
-    private static string EscapeString(string value) => value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    private static string EscapeString(string value) => value.Replace("\\", @"\\").Replace("\"", "\\\"");
 
     private static string ToPascalIdentifier(string value)
     {
@@ -312,14 +315,9 @@ public class SourceGeneratorWithAdditionalFiles : IIncrementalGenerator
         return candidate;
     }
 
-    private sealed class DirectoryNode
+    private sealed class DirectoryNode(string name)
     {
-        public DirectoryNode(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
+        public string Name { get; } = name;
 
         public string GeneratedName { get; set; } = string.Empty;
 

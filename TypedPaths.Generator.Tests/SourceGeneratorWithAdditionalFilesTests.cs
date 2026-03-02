@@ -100,7 +100,8 @@ public class SourceGeneratorWithAdditionalFilesTests
 
         var compilation = CSharpCompilation.Create(nameof(SourceGeneratorWithAdditionalFilesTests));
         var runResult = driver.RunGenerators(compilation).GetRunResult();
-        var generatedTree = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("TypedPaths.g.cs"));
+        var generatedTree = runResult.GeneratedTrees.FirstOrDefault(t => t.FilePath.EndsWith("TypedPaths.g.cs"));
+        Assert.NotNull(generatedTree);
 
         return generatedTree.GetText().ToString();
     }
