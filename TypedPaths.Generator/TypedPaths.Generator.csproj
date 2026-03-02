@@ -1,17 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
-        <IsPackable>false</IsPackable>
+        <LangVersion>preview</LangVersion>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
         <Nullable>enable</Nullable>
-        <LangVersion>latest</LangVersion>
+
+        <Version>1.0.0</Version>
 
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
 
         <RootNamespace>TypedPaths.Generator</RootNamespace>
         <PackageId>TypedPaths.Generator</PackageId>
+        <AssemblyName>TypedPaths.Generator</AssemblyName>
+
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>source-generator;path;paths;typed-paths;roslyn</PackageTags>
+        <RepositoryUrl>https://github.com/AlexChim1231/TypedPaths</RepositoryUrl>
+
+
+        <Authors>AlexChim1231</Authors>
+
+        <Description>A Roslyn source generator that turns a folder tree into strongly typed path constants at compile time.</Description>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\LICENSE">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
