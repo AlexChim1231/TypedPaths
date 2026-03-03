@@ -124,7 +124,7 @@ So you can use `TypedPaths.Src.FolderA.Template2.Value` and `TypedPaths.Template
 ```
 
 That is the only configuration needed in consumer projects.  
-`TypedPaths.Generator.targets` (from package `buildTransitive`) automatically maps each `TypedPathsFolder` to `AdditionalFiles` for source generation.
+`TypedPaths.Generator.targets` (from package `build`) automatically maps each `TypedPathsFolder` to `AdditionalFiles` for source generation.
 
 ### Option B: local project reference (repository development)
 
@@ -140,8 +140,8 @@ That is the only configuration needed in consumer projects.
   <TypedPathsFolder Include="template" />
 </ItemGroup>
 
-<Import Project="..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets"
-        Condition="Exists('..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets')" />
+<Import Project="..\TypedPaths.Generator\build\TypedPaths.Generator.targets"
+        Condition="Exists('..\TypedPaths.Generator\build\TypedPaths.Generator.targets')" />
 ```
 
 The explicit `<Import />` is required only for local project-reference scenarios.

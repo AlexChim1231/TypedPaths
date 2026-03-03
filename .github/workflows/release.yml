@@ -54,7 +54,7 @@ jobs:
               print("No .nupkg files were produced in nupkg/")
               sys.exit(1)
 
-          required_entry = "buildTransitive/TypedPaths.Generator.targets"
+          required_entry = "build/TypedPaths.Generator.targets"
           missing = []
           for package in packages:
               with zipfile.ZipFile(package) as archive:

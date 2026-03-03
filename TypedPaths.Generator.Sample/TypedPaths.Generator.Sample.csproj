@@ -16,7 +16,7 @@
         <TypedPathsFolder Include="template" />
     </ItemGroup>
 
-    <Import Project="..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets"
-            Condition="Exists('..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets')" />
+    <Import Project="..\TypedPaths.Generator\build\TypedPaths.Generator.targets"
+            Condition="Exists('..\TypedPaths.Generator\build\TypedPaths.Generator.targets')" />
 
 </Project>
