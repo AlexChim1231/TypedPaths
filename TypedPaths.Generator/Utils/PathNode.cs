@@ -5,5 +5,5 @@ public class PathNode
     public string Name { get; set; } = null!;
     public string FullPath { get; init; } = null!;
     public bool IsFile { get; init; }
-    public Dictionary<string, PathNode> Children { get; } = new Dictionary<string, PathNode>();
+    public Dictionary<string, PathNode> Children { get; } = new();
 }
