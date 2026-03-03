@@ -6,16 +6,16 @@
         <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TypedPathsProjectDir" />
     </ItemGroup>
 
-    <Target Name="CollectTypedPathsAdditionalFiles"
+    <Target Name="_InjectTypedPathsAdditionalFiles"
             BeforeTargets="GenerateMSBuildEditorConfigFileCore;CoreCompile"
             Condition="'@(TypedPathsFolder)' != ''">
         <ItemGroup>
-            <AdditionalFiles Include="%(TypedPathsFolder.FullPath)\**\*">
+            <AdditionalFiles Include="@(TypedPathsFolder->'%(FullPath)\**\*')">
                 <TypedPathsRoot>%(TypedPathsFolder.FullPath)</TypedPathsRoot>
                 <TypedPathsClassName>%(TypedPathsFolder.ClassName)</TypedPathsClassName>
                 <TypedPathsProjectDir>$(MSBuildProjectDirectory)</TypedPathsProjectDir>
             </AdditionalFiles>
-            <UpToDateCheckInput Include="%(TypedPathsFolder.FullPath)\**\*" />
+            <UpToDateCheckInput Include="@(TypedPathsFolder->'%(FullPath)\**\*')" />
         </ItemGroup>
     </Target>
 
