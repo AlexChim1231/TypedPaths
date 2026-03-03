@@ -44,5 +44,8 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="buildTransitive/TypedPaths.Generator.targets" Pack="true" PackagePath="build" />
+    </ItemGroup>
 
 </Project>
