@@ -18,7 +18,7 @@ namespace TypedPaths.Generator.Tests;
 public class GeneratorTests
 {
     [Fact]
-    public void Generator_RunsWithNoAdditionalFiles_ProducesNoSourcesAndNoDiagnostics()
+    public void Generator_RunsWithNoAdditionalFiles_ProducesOnlyAttributeSourceAndNoDiagnostics()
     {
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
@@ -30,7 +30,9 @@ public class GeneratorTests
         driver = driver.RunGenerators(compilation, cancellationToken: TestContext.Current.CancellationToken);
 
         var runResult = driver.GetRunResult();
-        Assert.Empty(runResult.GeneratedTrees);
+        var generatedTrees = runResult.GeneratedTrees;
+        var generatedSource = Assert.Single(generatedTrees).ToString();
+        Assert.Contains("internal class TypedPathAttribute : System.Attribute", generatedSource);
         Assert.Empty(runResult.Diagnostics);
     }
 
