@@ -42,6 +42,35 @@ jobs:
       - name: Pack
         run: dotnet pack TypedPaths.Generator/TypedPaths.Generator.csproj --no-build -c Release -o nupkg -p:Version=${{ steps.version.outputs.VERSION }}
 
+      - name: Verify packaged targets file
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          import zipfile
+
+          packages = sorted(glob.glob("nupkg/*.nupkg"))
+          if not packages:
+              print("No .nupkg files were produced in nupkg/")
+              sys.exit(1)
+
+          required_entry = "buildTransitive/TypedPaths.Generator.targets"
+          missing = []
+          for package in packages:
+              with zipfile.ZipFile(package) as archive:
+                  entries = set(archive.namelist())
+                  if required_entry not in entries:
+                      missing.append(package)
+
+          if missing:
+              print("Missing required entry in:")
+              for package in missing:
+                  print(f" - {package}")
+              sys.exit(1)
+
+          print(f"Verified {required_entry} in {len(packages)} package(s).")
+          PY
+
       - name: Push to NuGet.org
         run: dotnet nuget push nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
 

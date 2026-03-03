@@ -9,7 +9,7 @@
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
 
-        <Version>1.1.0</Version>
+        <Version>1.2.5</Version>
 
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
@@ -33,7 +33,8 @@
         <None Include="../README.md" Pack="true" PackagePath="\"/>
         <None Include="..\LICENSE" Pack="true" PackagePath="\"/>
 
-        <None Include="buildTransitive\TypedPaths.Generator.targets" Pack="true" PackagePath="build;buildTransitive" />
+        <None Include="buildTransitive\TypedPaths.Generator.targets" Pack="true" PackagePath="build\TypedPaths.Generator.targets" />
+        <None Include="buildTransitive\TypedPaths.Generator.targets" Pack="true" PackagePath="buildTransitive\TypedPaths.Generator.targets" />
 
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
