@@ -9,13 +9,19 @@
     <Target Name="_InjectTypedPathsAdditionalFiles"
             BeforeTargets="GenerateMSBuildEditorConfigFileCore;CoreCompile"
             Condition="'@(TypedPathsFolder)' != ''">
+        <!-- Use absolute path so the **\* glob expands on all platforms (relative globs can be passed unexpanded to CSC on Windows) -->
         <ItemGroup>
-            <AdditionalFiles Include="@(TypedPathsFolder->'%(FullPath)\**\*')">
-                <TypedPathsRoot>%(TypedPathsFolder.FullPath)</TypedPathsRoot>
-                <TypedPathsClassName>%(TypedPathsFolder.ClassName)</TypedPathsClassName>
+            <_TypedPathsRootDir Include="$(MSBuildProjectDirectory)\%(TypedPathsFolder.Identity)" Condition="'%(TypedPathsFolder.Identity)' != ''">
+                <ClassName>%(TypedPathsFolder.ClassName)</ClassName>
+            </_TypedPathsRootDir>
+        </ItemGroup>
+        <ItemGroup>
+            <AdditionalFiles Include="%(_TypedPathsRootDir.FullPath)\**\*">
+                <TypedPathsRoot>%(_TypedPathsRootDir.FullPath)</TypedPathsRoot>
+                <TypedPathsClassName>%(_TypedPathsRootDir.ClassName)</TypedPathsClassName>
                 <TypedPathsProjectDir>$(MSBuildProjectDirectory)</TypedPathsProjectDir>
             </AdditionalFiles>
-            <UpToDateCheckInput Include="@(TypedPathsFolder->'%(FullPath)\**\*')" />
+            <UpToDateCheckInput Include="%(_TypedPathsRootDir.FullPath)\**\*" />
         </ItemGroup>
     </Target>
 
