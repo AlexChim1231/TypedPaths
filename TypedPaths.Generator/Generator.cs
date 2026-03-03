@@ -48,7 +48,7 @@ public class Generator : IIncrementalGenerator
         context.RegisterSourceOutput(collection, static (spc, files) =>
         {
             if (files.IsDefaultOrEmpty) return;
-            
+
             var groups = files
                 .Where(f => f != null)
                 .Select(f => f!)
@@ -62,9 +62,9 @@ public class Generator : IIncrementalGenerator
                 var className = ResolveRootClassName(group, rootPath);
 
                 var tree = BuildTree(group, rootRelativePath);
-                
+
                 var code = SourceHelper.GenerateRoot(className, tree);
-                
+
                 spc.AddSource($"TypedPaths.{className}.g.cs", SourceText.From(code, Encoding.UTF8));
             }
         });
@@ -86,10 +86,10 @@ public class Generator : IIncrementalGenerator
             {
                 continue;
             }
-            
+
             var parts = relativePath
                 .Split('/', StringSplitOptions.RemoveEmptyEntries);
-            
+
             var currentNode = root;
 
             for (int i = 0; i < parts.Length; i++)
@@ -115,7 +115,7 @@ public class Generator : IIncrementalGenerator
                     };
                     currentNode.Children[safeName] = nextNode;
                 }
-            
+
                 currentNode = nextNode;
             }
         }
@@ -156,8 +156,8 @@ public class Generator : IIncrementalGenerator
     private static string ResolveFileNodeName(PathNode parent, string filePart)
     {
         var baseName = GetSafeIdentifier(filePart);
-        return !parent.Children.TryGetValue(baseName, out _) 
-            ? baseName 
+        return !parent.Children.TryGetValue(baseName, out _)
+            ? baseName
             : EnsureUniqueName(parent.Children, BuildConflictingFileName(filePart, baseName), null);
     }
 

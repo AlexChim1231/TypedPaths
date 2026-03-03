@@ -13,11 +13,11 @@ public static partial class PascalConverter
 
         return ToPascalCase(baseName);
     }
-    
+
     private static string ToPascalCase(string input)
     {
         var cleanInput = StartingDigitRegex().Replace(input, "");
-        
+
         var parts = AlphanumericRegex().Split(cleanInput)
             .Where(s => !string.IsNullOrEmpty(s))
             .Select(static part => char.ToUpperInvariant(part[0]) + part[1..]);
