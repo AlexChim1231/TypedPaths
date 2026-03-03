@@ -12,8 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <TypedPathsFolder Include="/src" ClassName="Src" />
-        <TypedPathsFolder Include="/template" />
+        <TypedPathsFolder Include="src" ClassName="Src" />
+        <TypedPathsFolder Include="template" />
     </ItemGroup>
 
     <Import Project="..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets"

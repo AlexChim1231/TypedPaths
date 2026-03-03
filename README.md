@@ -32,42 +32,35 @@ namespace TypedPaths
     {
         public static partial class Src
         {
-            public static string Value => "src";
-            public override string ToString() => Value;
+            public const string Value = "src";
 
             public static partial class Template1
             {
-                public static string Value => "src/Template1.anyext";
-                public override string ToString() => Value;
+                public const string Value = "src/Template1.anyext";
             }
 
             public static partial class FolderA
             {
-                public static string Value => "src/folderA";
-                public override string ToString() => Value;
+                public const string Value = "src/folderA";
 
                 public static partial class Template2
                 {
-                    public static string Value => "src/folderA/Template2.anyext";
-                    public override string ToString() => Value;
+                    public const string Value = "src/folderA/Template2.anyext";
                 }
             }
 
             public static partial class FolderB
             {
-                public static string Value => "src/folderB";
-                public override string ToString() => Value;
+                public const string Value = "src/folderB";
 
                 public static partial class Template3
                 {
-                    public static string Value => "src/folderB/Template3.anyext";
-                    public override string ToString() => Value;
+                    public const string Value = "src/folderB/Template3.anyext";
                 }
 
                 public static partial class Template4
                 {
-                    public static string Value => "src/folderB/Template4.anyext";
-                    public override string ToString() => Value;
+                    public const string Value = "src/folderB/Template4.anyext";
                 }
             }
         }
@@ -84,30 +77,25 @@ namespace TypedPaths
     {
         public static partial class Template
         {
-            public static string Value => "template";
-            public override string ToString() => Value;
+            public const string Value = "template";
 
             public static partial class Email
             {
-                public static string Value => "template/email";
-                public override string ToString() => Value;
+                public const string Value = "template/email";
 
                 public static partial class Welcome
                 {
-                    public static string Value => "template/email/welcome.txt";
-                    public override string ToString() => Value;
+                    public const string Value = "template/email/welcome.txt";
                 }
             }
 
             public static partial class Sms
             {
-                public static string Value => "template/sms";
-                public override string ToString() => Value;
+                public const string Value = "template/sms";
 
                 public static partial class Otp
                 {
-                    public static string Value => "template/sms/otp.txt";
-                    public override string ToString() => Value;
+                    public const string Value = "template/sms/otp.txt";
                 }
             }
         }
@@ -115,7 +103,7 @@ namespace TypedPaths
 }
 ```
 
-So you can use `TypedPaths.Src.FolderA.Template2` and `TypedPaths.Template.Email.Welcome` instead of raw string paths.
+So you can use `TypedPaths.Src.FolderA.Template2.Value` and `TypedPaths.Template.Email.Welcome.Value` instead of raw string paths.
 
 ## Requirements
 
@@ -132,12 +120,13 @@ So you can use `TypedPaths.Src.FolderA.Template2` and `TypedPaths.Template.Email
 </ItemGroup>
 
 <ItemGroup>
-  <TypedPathsFolder Include="/src" ClassName="Src" />
-  <TypedPathsFolder Include="/template" />
+  <TypedPathsFolder Include="src" ClassName="Src" />
+  <TypedPathsFolder Include="template" />
 </ItemGroup>
 ```
 
-`TypedPaths.Generator.targets` (from the package `buildTransitive` assets) maps these folders to `AdditionalFiles` and `Content` items for generation.
+That is the only configuration needed in consumer projects.  
+`TypedPaths.Generator.targets` (from package `buildTransitive`) automatically maps each `TypedPathsFolder` to `AdditionalFiles` for source generation.
 
 ### Option B: local project reference (repository development)
 
@@ -149,15 +138,15 @@ So you can use `TypedPaths.Src.FolderA.Template2` and `TypedPaths.Template.Email
 </ItemGroup>
 
 <ItemGroup>
-  <TypedPathsFolder Include="/src" ClassName="Src" />
-  <TypedPathsFolder Include="/template" />
+  <TypedPathsFolder Include="src" ClassName="Src" />
+  <TypedPathsFolder Include="template" />
 </ItemGroup>
 
 <Import Project="..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets"
         Condition="Exists('..\TypedPaths.Generator\buildTransitive\TypedPaths.Generator.targets')" />
 ```
 
-The explicit `<Import />` is important for local project reference scenarios so folder declarations are translated into `AdditionalFiles` consistently during local builds.
+The explicit `<Import />` is required only for local project-reference scenarios.
 
 Build the project; the generator runs and adds `TypedPaths.*.g.cs` files to the compilation.
 
@@ -168,13 +157,20 @@ The generated type is in namespace `TypedPaths`, and the root class is also name
 ```csharp
 using TypedPathsRoot = TypedPaths.TypedPaths;
 
-// Use as const strings
-string path = TypedPathsRoot.Src.FolderA.Template2;  // "src/folderA/Template2.anyext"
-string emailTemplate = TypedPathsRoot.Template.Email.Welcome; // "template/email/welcome.txt"
+// Always read .Value (works for both folder and file nodes)
+string folderPath = TypedPathsRoot.Src.FolderA.Value; // "src/folderA"
+string filePath = TypedPathsRoot.Src.FolderA.Template2.Value;  // "src/folderA/Template2.anyext"
+string emailTemplate = TypedPathsRoot.Template.Email.Welcome.Value; // "template/email/welcome.txt"
 
 // e.g. resolve to full path
-var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2);
+var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2.Value);
 ```
+
+`Value` is always a path relative to the project root:
+- Folder node `Value` = relative folder path
+- File node `Value` = relative file path (including extension)
+
+Nested child classes are emitted only for folders (because only folders can contain files/subfolders).
 
 ## Naming rules
 
@@ -182,6 +178,10 @@ var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2);
 - Invalid identifier characters are dropped or split; leading digits get a `_` prefix.
 - Duplicate names in the same scope get suffixes: `_2`, `_3`, etc.
 - Extensions are stripped from member names but kept in the path string.
+- If a folder name and file name conflict in the same scope:
+  - the folder keeps the base name;
+  - the file name becomes `FileName + ExtensionWithoutDot` (example: `report/` + `report.txt` -> `Report` and `ReportTxt`);
+  - if the conflicting file has no extension, use `File` suffix (example: `data/` + `data` -> `Data` and `DataFile`).
 
 ## Repository layout
 

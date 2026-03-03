@@ -35,29 +35,34 @@ public class GeneratorTests
     }
 
     [Fact]
-    public void Generator_WithTypedPathsAdditionalFiles_EmitsTypedPathSourceMatchingREADME()
+    public void Generator_WithTypedPathsAdditionalFiles_EmitsProjectRelativeValues()
     {
-        // README: root folder "src" with files → TypedPath.Src.g.cs, paths like "src/folderA/Template2.anyext"
-        // Create driver with additional texts and options (overload takes ISourceGenerator; wrap IIncrementalGenerator via reflection)
         ISourceGenerator? sourceGenerator = WrapIncrementalGenerator(new Generator());
         if (sourceGenerator == null)
         {
-            // Internal wrapper type/API may vary by Roslyn version; skip when not available
             return;
         }
 
+        const string projectDir = "C:/project";
         const string rootPath = "C:/project/src";
         List<AdditionalText> additionalFiles =
         [
+            new TestAdditionalFile("C:/project/src/Template1.anyext", ""),
             new TestAdditionalFile("C:/project/src/folderA/Template2.anyext", ""),
             new TestAdditionalFile("C:/project/src/folderB/Template3.anyext", ""),
             new TestAdditionalFile("C:/project/src/folderB/Template4.anyext", "")
         ];
-        var fileToRoot = new Dictionary<string, string>(additionalFiles.Count);
-        foreach (var f in additionalFiles)
-            fileToRoot[f.Path] = rootPath;
 
-        var optionsProvider = new TestAnalyzerConfigOptionsProvider(fileToRoot);
+        var fileMetadata = new Dictionary<string, TestAnalyzerConfigOptionsProvider.FileMetadata>(additionalFiles.Count);
+        foreach (var f in additionalFiles)
+        {
+            fileMetadata[f.Path] = new TestAnalyzerConfigOptionsProvider.FileMetadata(
+                RootPath: rootPath,
+                ClassName: "Src",
+                ProjectDirectory: projectDir);
+        }
+
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(fileMetadata);
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
             [CSharpSyntaxTree.ParseText("// empty", cancellationToken: TestContext.Current.CancellationToken)],
@@ -74,26 +79,111 @@ public class GeneratorTests
         var runResult = driver.GetRunResult();
         Assert.Empty(runResult.Diagnostics);
 
-        var generated = runResult.GeneratedTrees.ToList();
-        if (generated.Count == 0)
-        {
-            // Generator may not have received additional files when using wrapped driver
-            return;
-        }
+        var srcTree = runResult.GeneratedTrees.FirstOrDefault();
+        Assert.NotNull(srcTree);
 
-        // Find the tree that contains the Src class (README: one file per root folder)
-        var srcTree = generated.FirstOrDefault(t => t.ToString().Contains("public static partial class Src"));
-        if (srcTree == null)
-            return; // Wrapped driver or pipeline may not feed additional files; skip assertions
-
-        var text = srcTree.ToString();
+        var text = srcTree!.ToString();
         Assert.Contains("namespace TypedPaths", text);
+        Assert.Contains("public static partial class TypedPaths", text);
         Assert.Contains("public static partial class Src", text);
+        Assert.Contains("public const string Value = \"src\";", text);
         Assert.Contains("FolderA", text);
         Assert.Contains("FolderB", text);
+        Assert.Contains("Template1", text);
         Assert.Contains("src/folderA/Template2.anyext", text);
         Assert.Contains("src/folderB/Template3.anyext", text);
         Assert.Contains("src/folderB/Template4.anyext", text);
+    }
+
+    [Fact]
+    public void Generator_WhenFolderAndFileNamesConflict_FolderKeepsNameAndFileGetsExtensionSuffix()
+    {
+        ISourceGenerator? sourceGenerator = WrapIncrementalGenerator(new Generator());
+        if (sourceGenerator == null)
+        {
+            return;
+        }
+
+        const string projectDir = "C:/project";
+        const string rootPath = "C:/project/src";
+        List<AdditionalText> additionalFiles =
+        [
+            new TestAdditionalFile("C:/project/src/report.txt", ""),
+            new TestAdditionalFile("C:/project/src/report/child.anyext", "")
+        ];
+
+        var fileMetadata = additionalFiles.ToDictionary(
+            f => f.Path,
+            _ => new TestAnalyzerConfigOptionsProvider.FileMetadata(rootPath, "Src", projectDir),
+            StringComparer.OrdinalIgnoreCase);
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(fileMetadata);
+
+        var compilation = CSharpCompilation.Create(
+            "TestAssembly",
+            [CSharpSyntaxTree.ParseText("// empty", cancellationToken: TestContext.Current.CancellationToken)],
+            Basic.Reference.Assemblies.Net80.References.All,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [sourceGenerator],
+            additionalFiles,
+            null,
+            optionsProvider);
+        driver = driver.RunGenerators(compilation, cancellationToken: TestContext.Current.CancellationToken);
+
+        var runResult = driver.GetRunResult();
+        Assert.Empty(runResult.Diagnostics);
+        var text = runResult.GeneratedTrees.Single().ToString();
+
+        Assert.Contains("public static partial class Report", text);
+        Assert.Contains("public const string Value = \"src/report\";", text);
+        Assert.Contains("public static partial class ReportTxt", text);
+        Assert.Contains("public const string Value = \"src/report.txt\";", text);
+    }
+
+    [Fact]
+    public void Generator_WhenExtensionlessFileConflictsWithFolder_UsesFileSuffix()
+    {
+        ISourceGenerator? sourceGenerator = WrapIncrementalGenerator(new Generator());
+        if (sourceGenerator == null)
+        {
+            return;
+        }
+
+        const string projectDir = "C:/project";
+        const string rootPath = "C:/project/src";
+        List<AdditionalText> additionalFiles =
+        [
+            new TestAdditionalFile("C:/project/src/data", ""),
+            new TestAdditionalFile("C:/project/src/data/child.anyext", "")
+        ];
+
+        var fileMetadata = additionalFiles.ToDictionary(
+            f => f.Path,
+            _ => new TestAnalyzerConfigOptionsProvider.FileMetadata(rootPath, "Src", projectDir),
+            StringComparer.OrdinalIgnoreCase);
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(fileMetadata);
+
+        var compilation = CSharpCompilation.Create(
+            "TestAssembly",
+            [CSharpSyntaxTree.ParseText("// empty", cancellationToken: TestContext.Current.CancellationToken)],
+            Basic.Reference.Assemblies.Net80.References.All,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [sourceGenerator],
+            additionalFiles,
+            null,
+            optionsProvider);
+        driver = driver.RunGenerators(compilation, cancellationToken: TestContext.Current.CancellationToken);
+
+        var runResult = driver.GetRunResult();
+        Assert.Empty(runResult.Diagnostics);
+        var text = runResult.GeneratedTrees.Single().ToString();
+
+        Assert.Contains("public static partial class Data", text);
+        Assert.Contains("public static partial class DataFile", text);
+        Assert.Contains("public const string Value = \"src/data\";", text);
     }
 
     /// <summary>

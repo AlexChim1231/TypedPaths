@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace TypedPaths.Generator.Utils;
@@ -21,7 +20,7 @@ public static partial class PascalConverter
         
         var parts = AlphanumericRegex().Split(cleanInput)
             .Where(s => !string.IsNullOrEmpty(s))
-            .Select(CultureInfo.InvariantCulture.TextInfo.ToTitleCase);
+            .Select(static part => char.ToUpperInvariant(part[0]) + part[1..]);
 
         return string.Concat(parts);
     }

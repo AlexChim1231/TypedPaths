@@ -4,10 +4,6 @@ namespace TypedPaths.Generator.Utils;
 
 public static class SourceHelper
 {
-    private const string Usings = "using System;";
-    
-    private const string GeneratedCodeAttribute = "[global::System.CodeDom.Compiler.GeneratedCode(\"TypedPaths.Generator\", \"1.0.0\")]";
-    
     private static string GetIntent(int level) => new string(' ', level * 4);
     
     public static string GenerateRoot(string className, PathNode rootNode)
@@ -20,22 +16,25 @@ public static class SourceHelper
         sb.AppendLine("{");
 
         sb.Append(GetIntent(1));
-        sb.AppendLine($"public static partial class {className}");
-    
+        sb.AppendLine("public static partial class TypedPaths");
         sb.Append(GetIntent(1));
         sb.AppendLine("{");
 
         sb.Append(GetIntent(2));
-        sb.AppendLine($"public static string Value => \"{rootNode.FullPath}\";");
+        sb.AppendLine($"public static partial class {className}");
         sb.Append(GetIntent(2));
-        sb.AppendLine("public override string ToString() => Value;");
+        sb.AppendLine("{");
+        sb.Append(GetIntent(3));
+        sb.AppendLine($"public const string Value = \"{Escape(rootNode.FullPath)}\";");
         sb.AppendLine();
 
         foreach (var child in rootNode.Children.Values)
         {
-            GenerateNest(child, sb, 2);
+            GenerateNest(child, sb, 3);
         }
-    
+
+        sb.Append(GetIntent(2));
+        sb.AppendLine("}");
         sb.Append(GetIntent(1));
         sb.AppendLine("}");
     
@@ -49,17 +48,24 @@ public static class SourceHelper
         var firstIntent = GetIntent(intentLevel);
         var secondIntent = GetIntent(intentLevel + 1);
         
-        sb.AppendLine($"{firstIntent}public static class {node.Name}");
+        sb.AppendLine($"{firstIntent}public static partial class {node.Name}");
         sb.AppendLine($"{firstIntent}{{");
-        
-        foreach (var child in node.Children.Values)
+        sb.AppendLine($"{secondIntent}public const string Value = \"{Escape(node.FullPath)}\";");
+
+        if (!node.IsFile)
         {
-            GenerateNest(child, sb, intentLevel + 1);
+            sb.AppendLine();
+            foreach (var child in node.Children.Values)
+            {
+                GenerateNest(child, sb, intentLevel + 1);
+            }
         }
-
-        sb.AppendLine($"{secondIntent}public static string Value => \"{node.FullPath}\";");
-        sb.AppendLine($"{secondIntent}public override string ToString() => Value;");
-
+        
         sb.AppendLine($"{firstIntent}}}");
+    }
+
+    private static string Escape(string value)
+    {
+        return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 }
