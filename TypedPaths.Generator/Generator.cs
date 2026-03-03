@@ -77,7 +77,7 @@ public class Generator : IIncrementalGenerator
             for (int i = 0; i < parts.Length; i++)
             {
                 string part = parts[i];
-                bool isFile = (i == parts.Length - 1);
+                bool isFile = i == parts.Length - 1;
             
                 string safeName = PascalConverter.GetSafeClassName(part);
 
