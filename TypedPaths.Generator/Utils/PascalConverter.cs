@@ -2,8 +2,11 @@ using System.Text.RegularExpressions;
 
 namespace TypedPaths.Generator.Utils;
 
-public static partial class PascalConverter
+public static class PascalConverter
 {
+    private static readonly Regex StartingDigitRegex = new(@"^\d+", RegexOptions.Compiled);
+    private static readonly Regex NonAlphanumericRegex = new(@"[^a-zA-Z0-9]+", RegexOptions.Compiled);
+
     public static string GetSafeClassName(string input)
     {
         string ext = Path.GetExtension(input).TrimStart('.');
@@ -16,18 +19,12 @@ public static partial class PascalConverter
 
     private static string ToPascalCase(string input)
     {
-        var cleanInput = StartingDigitRegex().Replace(input, "");
+        var cleanInput = StartingDigitRegex.Replace(input, "");
 
-        var parts = AlphanumericRegex().Split(cleanInput)
+        var parts = NonAlphanumericRegex.Split(cleanInput)
             .Where(s => !string.IsNullOrEmpty(s))
-            .Select(static part => char.ToUpperInvariant(part[0]) + part[1..]);
+            .Select(static part => char.ToUpperInvariant(part[0]) + part.Substring(1));
 
         return string.Concat(parts);
     }
-
-    [GeneratedRegex(@"^\d+")]
-    private static partial Regex StartingDigitRegex();
-
-    [GeneratedRegex(@"[^a-zA-Z0-9]+")]
-    private static partial Regex AlphanumericRegex();
 }

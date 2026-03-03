@@ -91,14 +91,14 @@ public class Generator : IIncrementalGenerator
 
         foreach (var file in files.OrderBy(f => f.File.Path, StringComparer.OrdinalIgnoreCase))
         {
-            var relativePath = Path.GetRelativePath(file.RootPath, file.File.Path).Replace('\\', '/');
+            var relativePath = GetRelativePath(file.RootPath, file.File.Path).Replace('\\', '/');
             if (relativePath.StartsWith("..", StringComparison.Ordinal))
             {
                 continue;
             }
 
             var parts = relativePath
-                .Split('/', StringSplitOptions.RemoveEmptyEntries);
+                .Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             var currentNode = root;
 
@@ -215,7 +215,26 @@ public class Generator : IIncrementalGenerator
 
     private static string ToProjectRelativePath(string projectDirectory, string rootPath)
     {
-        var relativePath = Path.GetRelativePath(projectDirectory, rootPath).Replace('\\', '/');
+        var relativePath = GetRelativePath(projectDirectory, rootPath).Replace('\\', '/');
         return relativePath == "." ? string.Empty : relativePath;
+    }
+
+    /// <summary>
+    /// Polyfill for <c>Path.GetRelativePath</c> which is unavailable on netstandard2.0.
+    /// </summary>
+    private static string GetRelativePath(string relativeTo, string path)
+    {
+        var fromUri = new Uri(EnsureTrailingSeparator(Path.GetFullPath(relativeTo)));
+        var toUri = new Uri(Path.GetFullPath(path));
+        var relativeUri = fromUri.MakeRelativeUri(toUri);
+        var relativePath = Uri.UnescapeDataString(relativeUri.ToString());
+        return relativePath.Replace('/', Path.DirectorySeparatorChar);
+    }
+
+    private static string EnsureTrailingSeparator(string path)
+    {
+        return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+            ? path
+            : path + Path.DirectorySeparatorChar;
     }
 }
