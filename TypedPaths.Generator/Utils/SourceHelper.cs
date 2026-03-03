@@ -4,7 +4,7 @@ namespace TypedPaths.Generator.Utils;
 
 public static class SourceHelper
 {
-    private static string GetIntent(int level) => new string(' ', level * 4);
+    private static string GetIntent(int level) => new(' ', level * 4);
     
     public static string GenerateRoot(string className, PathNode rootNode)
     {
@@ -66,6 +66,6 @@ public static class SourceHelper
 
     private static string Escape(string value)
     {
-        return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        return value.Replace("\\", @"\\").Replace("\"", "\\\"");
     }
 }

@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
@@ -133,7 +131,7 @@ public class Generator : IIncrementalGenerator
 
         if (!string.IsNullOrWhiteSpace(explicitName))
         {
-            return GetSafeIdentifier(explicitName!);
+            return GetSafeIdentifier(explicitName);
         }
 
         var folderName = Path.GetFileName(rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
@@ -158,17 +156,9 @@ public class Generator : IIncrementalGenerator
     private static string ResolveFileNodeName(PathNode parent, string filePart)
     {
         var baseName = GetSafeIdentifier(filePart);
-        if (!parent.Children.TryGetValue(baseName, out var existing))
-        {
-            return baseName;
-        }
-
-        if (!existing.IsFile)
-        {
-            return EnsureUniqueName(parent.Children, BuildConflictingFileName(filePart, baseName), null);
-        }
-
-        return EnsureUniqueName(parent.Children, BuildConflictingFileName(filePart, baseName), null);
+        return !parent.Children.TryGetValue(baseName, out _) 
+            ? baseName 
+            : EnsureUniqueName(parent.Children, BuildConflictingFileName(filePart, baseName), null);
     }
 
     private static string BuildConflictingFileName(string filePart, string baseName)
