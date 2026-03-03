@@ -16,18 +16,18 @@ if (projectRoot is null)
 }
 
 Console.WriteLine("Typed path constants (relative paths):");
-Console.WriteLine("  TypedPaths.Src.Template1           = " + TypedPathsRoot.Src.Template1);
-Console.WriteLine("  TypedPaths.Src.FolderA.Template2   = " + TypedPathsRoot.Src.FolderA.Template2);
-Console.WriteLine("  TypedPaths.Src.FolderB.Template3   = " + TypedPathsRoot.Src.FolderB.Template3);
-Console.WriteLine("  TypedPaths.Src.FolderB.Template4   = " + TypedPathsRoot.Src.FolderB.Template4);
-Console.WriteLine("  TypedPaths.Template.Email.Welcome  = " + TypedPathsRoot.Template.Email.Welcome);
-Console.WriteLine("  TypedPaths.Template.Sms.Otp        = " + TypedPathsRoot.Template.Sms.Otp);
+Console.WriteLine("  TypedPaths.Src.Template1.Value           = " + TypedPathsRoot.Src.Template1.Value);
+Console.WriteLine("  TypedPaths.Src.FolderA.Template2.Value   = " + TypedPathsRoot.Src.FolderA.Template2.Value);
+Console.WriteLine("  TypedPaths.Src.FolderB.Template3.Value   = " + TypedPathsRoot.Src.FolderB.Template3.Value);
+Console.WriteLine("  TypedPaths.Src.FolderB.Template4.Value   = " + TypedPathsRoot.Src.FolderB.Template4.Value);
+Console.WriteLine("  TypedPaths.Template.Email.Welcome.Value  = " + TypedPathsRoot.Template.Email.Welcome.Value);
+Console.WriteLine("  TypedPaths.Template.Sms.Otp.Value        = " + TypedPathsRoot.Template.Sms.Otp.Value);
 
 // Example: resolve to full path and check if file exists
-var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2);
+var fullPath = Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2.Value);
 Console.WriteLine();
 Console.WriteLine("Example: resolve to full path:");
-Console.WriteLine("  Path.Combine(projectRoot, TypedPaths.Src.FolderA.Template2)");
+Console.WriteLine("  Path.Combine(projectRoot, TypedPaths.Src.FolderA.Template2.Value)");
 Console.WriteLine("  = " + fullPath);
 Console.WriteLine("  Exists: " + File.Exists(fullPath));
 

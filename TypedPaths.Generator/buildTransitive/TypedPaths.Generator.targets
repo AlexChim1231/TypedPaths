@@ -1,24 +1,22 @@
 <Project>
-    <ItemDefinitionGroup>
-        <TypedPathsFolder>
-            <ClassName></ClassName>
-        </TypedPathsFolder>
-    </ItemDefinitionGroup>
 
     <ItemGroup>
-        <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TypedPathsFolderInclude" />
+        <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TypedPathsRoot" />
         <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TypedPathsClassName" />
+        <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TypedPathsProjectDir" />
     </ItemGroup>
 
-    <Target Name="TypedPathsConfigureFolders"
-            BeforeTargets="GenerateMSBuildEditorConfigFile;CoreCompile"
+    <Target Name="CollectTypedPathsAdditionalFiles"
+            BeforeTargets="GenerateMSBuildEditorConfigFileCore;CoreCompile"
             Condition="'@(TypedPathsFolder)' != ''">
         <ItemGroup>
-            <AdditionalFiles Include="$([System.Text.RegularExpressions.Regex]::Replace($([System.String]::Copy('%(TypedPathsFolder.Identity)').Trim()), '^[\\/]+', ''))\**\*">
-                <TypedPathsFolderInclude>%(TypedPathsFolder.Identity)</TypedPathsFolderInclude>
+            <AdditionalFiles Include="%(TypedPathsFolder.FullPath)\**\*">
+                <TypedPathsRoot>%(TypedPathsFolder.FullPath)</TypedPathsRoot>
                 <TypedPathsClassName>%(TypedPathsFolder.ClassName)</TypedPathsClassName>
+                <TypedPathsProjectDir>$(MSBuildProjectDirectory)</TypedPathsProjectDir>
             </AdditionalFiles>
-            <Content Include="$([System.Text.RegularExpressions.Regex]::Replace($([System.String]::Copy('%(TypedPathsFolder.Identity)').Trim()), '^[\\/]+', ''))\**\*" />
+            <UpToDateCheckInput Include="%(TypedPathsFolder.FullPath)\**\*" />
         </ItemGroup>
     </Target>
+
 </Project>
