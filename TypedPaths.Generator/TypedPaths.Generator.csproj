@@ -31,11 +31,11 @@
 
     <ItemGroup>
         <None Include="../README.md" Pack="true" PackagePath="\"/>
-        <None Include="..\LICENSE">
-            <Pack>True</Pack>
-            <PackagePath>\</PackagePath>
-        </None>
-        <None Include="buildTransitive\TypedPaths.Generator.targets" Pack="true" PackagePath="buildTransitive\" />
+        <None Include="..\LICENSE" Pack="true" PackagePath="\"/>
+
+        <None Include="buildTransitive\TypedPaths.Generator.targets" Pack="true" PackagePath="build;buildTransitive" />
+
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -44,17 +44,6 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="buildTransitive/TypedPaths.Generator.targets" Pack="true" PackagePath="build" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll"
-              Pack="true"
-              PackagePath="analyzers/dotnet/cs"
-              Visible="false" />
     </ItemGroup>
 
 </Project>
