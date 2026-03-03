@@ -18,7 +18,7 @@ public class Generator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(i => i.AddSource(
-            "TypedPathsAttribute.g.cs", 
+            "TypedPathsAttribute.g.cs",
             """
             namespace TypedPaths 
                 {
@@ -26,7 +26,7 @@ public class Generator : IIncrementalGenerator
                     internal class TypedPathAttribute : System.Attribute { }
                 }
             """));
-        
+
         var collection = context.AdditionalTextsProvider
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Select(static (pair, _) =>
