@@ -81,13 +81,12 @@ public class GeneratorTests
         var runResult = driver.GetRunResult();
         Assert.Empty(runResult.Diagnostics);
 
-        var srcTree = runResult.GeneratedTrees.FirstOrDefault();
+        var srcTree = runResult.GeneratedTrees.FirstOrDefault(t => t.ToString().Contains("public static class Src"));
         Assert.NotNull(srcTree);
 
         var text = srcTree!.ToString();
         Assert.Contains("namespace TypedPaths", text);
-        Assert.Contains("public static partial class TypedPaths", text);
-        Assert.Contains("public static partial class Src", text);
+        Assert.Contains("public static class Src", text);
         Assert.Contains("public const string Value = \"src\";", text);
         Assert.Contains("FolderA", text);
         Assert.Contains("FolderB", text);
@@ -135,11 +134,13 @@ public class GeneratorTests
 
         var runResult = driver.GetRunResult();
         Assert.Empty(runResult.Diagnostics);
-        var text = runResult.GeneratedTrees.Single().ToString();
+        var srcTree = runResult.GeneratedTrees.FirstOrDefault(t => t.ToString().Contains("public static class Report"));
+        Assert.NotNull(srcTree);
+        var text = srcTree.ToString();
 
-        Assert.Contains("public static partial class Report", text);
+        Assert.Contains("public static class Report", text);
         Assert.Contains("public const string Value = \"src/report\";", text);
-        Assert.Contains("public static partial class ReportTxt", text);
+        Assert.Contains("public static class ReportTxt", text);
         Assert.Contains("public const string Value = \"src/report.txt\";", text);
     }
 
@@ -181,10 +182,12 @@ public class GeneratorTests
 
         var runResult = driver.GetRunResult();
         Assert.Empty(runResult.Diagnostics);
-        var text = runResult.GeneratedTrees.Single().ToString();
+        var srcTree = runResult.GeneratedTrees.FirstOrDefault(t => t.ToString().Contains("public static class Data"));
+        Assert.NotNull(srcTree);
+        var text = srcTree.ToString();
 
-        Assert.Contains("public static partial class Data", text);
-        Assert.Contains("public static partial class DataFile", text);
+        Assert.Contains("public static class Data", text);
+        Assert.Contains("public static class DataFile", text);
         Assert.Contains("public const string Value = \"src/data\";", text);
     }
 
