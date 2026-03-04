@@ -14,28 +14,21 @@ public static class SourceHelper
         sb.AppendLine();
         sb.AppendLine("namespace TypedPaths;");
 
-        sb.AppendLine("public static partial class TypedPaths");
-        sb.AppendLine("{");
+        sb.AppendLine($"public static class {className}");
 
-        sb.Append(GetIntent(1));
-        sb.AppendLine($"public static partial class {className}");
-        sb.Append(GetIntent(1));
         sb.AppendLine("{");
-        sb.Append(GetIntent(2));
+        sb.Append(GetIntent(1));
         sb.AppendLine($"public const string Value = \"{Escape(rootNode.FullPath)}\";");
+
         sb.AppendLine();
 
         foreach (var child in rootNode.Children.Values)
         {
-            GenerateNest(child, sb, 3);
+            GenerateNest(child, sb, 1);
         }
-
-        sb.Append(GetIntent(1));
+   
         sb.AppendLine("}");
-
-        sb.AppendLine("}");
-
-
+        
         return sb.ToString();
     }
 
@@ -44,7 +37,7 @@ public static class SourceHelper
         var firstIntent = GetIntent(intentLevel);
         var secondIntent = GetIntent(intentLevel + 1);
 
-        sb.AppendLine($"{firstIntent}public static partial class {node.Name}");
+        sb.AppendLine($"{firstIntent}public static class {node.Name}");
         sb.AppendLine($"{firstIntent}{{");
         sb.AppendLine($"{secondIntent}public const string Value = \"{Escape(node.FullPath)}\";");
 

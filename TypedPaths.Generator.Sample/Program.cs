@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-using TypedPathsRoot = TypedPaths.TypedPaths;
+using TypedPaths;
 
 // Sample usage of generated typed paths.
 // Build the project first so the source generator emits TypedPaths.*.g.cs files.
@@ -20,15 +20,15 @@ if (projectRoot is null)
 }
 
 Console.WriteLine("Typed path constants (relative paths):");
-Console.WriteLine("  TypedPaths.Src.Template1.Value           = " + TypedPathsRoot.Src.Template1.Value);
-Console.WriteLine("  TypedPaths.Src.FolderA.Template2.Value   = " + TypedPathsRoot.Src.FolderA.Template2.Value);
-Console.WriteLine("  TypedPaths.Src.FolderB.Template3.Value   = " + TypedPathsRoot.Src.FolderB.Template3.Value);
-Console.WriteLine("  TypedPaths.Src.FolderB.Template4.Value   = " + TypedPathsRoot.Src.FolderB.Template4.Value);
-Console.WriteLine("  TypedPaths.Template.Email.Welcome.Value  = " + TypedPathsRoot.Template.Email.Welcome.Value);
-Console.WriteLine("  TypedPaths.Template.Sms.Otp.Value        = " + TypedPathsRoot.Template.Sms.Otp.Value);
+Console.WriteLine("  TypedPaths.Src.Template1.Value           = " + Src.Template1.Value);
+Console.WriteLine("  TypedPaths.Src.FolderA.Template2.Value   = " + Src.FolderA.Template2.Value);
+Console.WriteLine("  TypedPaths.Src.FolderB.Template3.Value   = " + Src.FolderB.Template3.Value);
+Console.WriteLine("  TypedPaths.Src.FolderB.Template4.Value   = " + Src.FolderB.Template4.Value);
+Console.WriteLine("  TypedPaths.Template.Email.Welcome.Value  = " + Template.Email.Welcome.Value);
+Console.WriteLine("  TypedPaths.Template.Sms.Otp.Value        = " + Template.Sms.Otp.Value);
 
 // Example: resolve project-relative path to full path (project root = before-build layout)
-var fullPath = Path.GetFullPath(Path.Combine(projectRoot, TypedPathsRoot.Src.FolderA.Template2.Value));
+var fullPath = Path.GetFullPath(Path.Combine(projectRoot, Src.FolderA.Template2.Value));
 Console.WriteLine();
 Console.WriteLine("Example: resolve to full path (project-relative -> absolute):");
 Console.WriteLine("  Path.Combine(projectRoot, TypedPaths.Src.FolderA.Template2.Value)");
