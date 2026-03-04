@@ -26,9 +26,9 @@ public static class SourceHelper
         {
             GenerateNest(child, sb, 1);
         }
-   
+
         sb.AppendLine("}");
-        
+
         return sb.ToString();
     }
 
